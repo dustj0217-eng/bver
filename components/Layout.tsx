@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import { Menu, X, Instagram, Youtube } from 'lucide-react';
 import Link from 'next/link';
 
@@ -5,33 +8,9 @@ interface HeaderProps {
   onMenuOpen: () => void;
 }
 
-export function Header({ onMenuOpen }: HeaderProps) {
-  return (
-    <header className="fixed top-0 left-0 right-0 bg-white z-40 h-14 md:h-16 border-b">
-      <button
-        onClick={onMenuOpen}
-        className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2"
-      >
-        <Menu size={24} />
-      </button>
-      <h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-xl md:text-2xl font-display font-bold">
-        BEAVER HOUSE
-      </h1>
-    </header>
-  );
-}
+export function Header() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-interface FullMenuProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-interface FullMenuProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-export function FullMenu({ isOpen, onClose }: FullMenuProps) {
   const menuItems = [
     { text: 'HOME', href: '/', delay: 0 },
     { text: 'SHOP', href: '/goods', delay: 100 },
@@ -42,54 +21,82 @@ export function FullMenu({ isOpen, onClose }: FullMenuProps) {
   ];
 
   return (
-    <div
-      aria-hidden={!isOpen}
-      className={`fixed inset-0 z-50 bg-black transition-all duration-500
-        ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}
-      `}
-    >
-      {/* 메뉴 */}
-      <nav className="flex h-full flex-col justify-center px-12 md:px-16">
-        {menuItems.map((item) => {
-          const commonClass = `
-            text-white text-4xl md:text-5xl font-display font-bold
-            mb-8 md:mb-9 text-left
-            transition-all duration-700
-            ${isOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}
-          `;
+    <>
+      {/* 헤더 */}
+      <header className="fixed top-0 left-0 right-0 bg-white z-40 h-14 md:h-16 border-b">
+        <button
+          onClick={() => setIsMenuOpen(true)}
+          className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2"
+          aria-label="메뉴 열기"
+        >
+          <Menu size={24} />
+        </button>
+        <Link href={"/"}>
+          <h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-xl md:text-2xl font-bold">
+            BEAVER HOUSE
+          </h1>
+        </Link>
+      </header>
 
-          const style = {
-            transitionDelay: isOpen ? `${item.delay}ms` : '0ms',
-          };
+      {/* 풀스크린 메뉴 */}
+      <div
+        aria-hidden={!isMenuOpen}
+        className={`fixed inset-0 z-50 bg-black transition-all duration-500
+          ${isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}
+        `}
+      >
+        {/* 닫기 버튼 */}
+        <button
+          onClick={() => setIsMenuOpen(false)}
+          className="absolute top-4 right-4 md:top-6 md:right-6 text-white"
+          aria-label="메뉴 닫기"
+        >
+          <X size={28} />
+        </button>
 
-          if (item.href) {
+        {/* 메뉴 리스트 */}
+        <nav className="flex h-full flex-col justify-center px-12 md:px-16">
+          {menuItems.map((item) => {
+            const commonClass = `
+              text-white text-4xl md:text-5xl font-bold
+              mb-8 md:mb-9 text-left
+              transition-all duration-700
+              ${isMenuOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}
+            `;
+
+            const style = {
+              transitionDelay: isMenuOpen ? `${item.delay}ms` : '0ms',
+            };
+
+            if (item.href) {
+              return (
+                <Link
+                  key={item.text}
+                  href={item.href}
+                  onClick={() => setIsMenuOpen(false)}
+                  className={commonClass}
+                  style={style}
+                >
+                  {item.text}
+                </Link>
+              );
+            }
+
             return (
-              <Link
+              <button
                 key={item.text}
-                href={item.href}
-                onClick={onClose}
+                type="button"
+                onClick={() => setIsMenuOpen(false)}
                 className={commonClass}
                 style={style}
               >
                 {item.text}
-              </Link>
+              </button>
             );
-          }
-
-          return (
-            <button
-              key={item.text}
-              type="button"
-              onClick={onClose}
-              className={commonClass}
-              style={style}
-            >
-              {item.text}
-            </button>
-          );
-        })}
-      </nav>
-    </div>
+          })}
+        </nav>
+      </div>
+    </>
   );
 }
 
@@ -98,7 +105,7 @@ export function Footer() {
     <footer className="bg-black text-white px-4 md:px-6 py-10 md:py-12 text-sm md:text-base">
       <div className="max-w-3xl mx-auto">
         <div className="mb-6">
-          <p className="font-display font-bold text-lg md:text-xl mb-4">BEAVER HOUSE</p>
+          <p className="font-bold text-lg md:text-xl mb-4">BEAVER HOUSE</p>
           <div className="text-gray-400 space-y-1 text-sm md:text-base mb-6">
             <p>대표: 홍길동</p>
             <p>사업자등록번호: 123-45-67890</p>
@@ -142,38 +149,24 @@ export function MobileNav({ activeTab, onTabChange }: MobileNavProps) {
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t z-40 md:hidden">
       <div className="flex">
-        <button
-          onClick={() => onTabChange('home')}
-          className={`flex-1 py-3 text-center text-xs ${
-            activeTab === 'home' ? 'text-black font-medium' : 'text-gray-400'
-          }`}
-        >
-          홈
-        </button>
-        <button
-          onClick={() => onTabChange('goods')}
-          className={`flex-1 py-3 text-center text-xs ${
-            activeTab === 'goods' ? 'text-black font-medium' : 'text-gray-400'
-          }`}
-        >
-          상점
-        </button>
-        <button
-          onClick={() => onTabChange('popup')}
-          className={`flex-1 py-3 text-center text-xs ${
-            activeTab === 'popup' ? 'text-black font-medium' : 'text-gray-400'
-          }`}
-        >
-          팝업
-        </button>
-        <button
-          onClick={() => onTabChange('my')}
-          className={`flex-1 py-3 text-center text-xs ${
-            activeTab === 'my' ? 'text-black font-medium' : 'text-gray-400'
-          }`}
-        >
-          MY
-        </button>
+        {[
+          { key: 'home', label: '홈' },
+          { key: 'goods', label: '상점' },
+          { key: 'popup', label: '팝업' },
+          { key: 'my', label: 'MY' },
+        ].map(item => (
+          <button
+            key={item.key}
+            onClick={() => onTabChange(item.key)}
+            className={`flex-1 py-3 text-center text-xs ${
+              activeTab === item.key
+                ? 'text-black font-medium'
+                : 'text-gray-400'
+            }`}
+          >
+            {item.label}
+          </button>
+        ))}
       </div>
     </nav>
   );

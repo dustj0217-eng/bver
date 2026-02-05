@@ -233,11 +233,6 @@ export async function getPopupData() {
 
 export async function getAllPopups(): Promise<PopupStore[]> {
   const notionData = await getPopupData();
-  
-  // 디버깅: raw 데이터 확인
-  console.log('=== Raw Notion Data ===');
-  console.log(JSON.stringify(notionData[0], null, 2));
-  
   return notionData.map(convertNotionToPopup);
 }
 

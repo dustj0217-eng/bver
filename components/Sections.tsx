@@ -352,7 +352,7 @@ export function HomeSection({ visibleSections, sectionRefs }: HomeSectionProps) 
               : 'opacity-0 translate-y-10'
           }`}
         >
-          <h3 className="text-lg md:text-xl font-display font-bold mb-4 md:mb-6">진행중 이벤트</h3>
+          <h3 className="text-lg md:text-xl font-display font-bold mb-4 md:mb-6 grid md:grid-cols-2">진행중 이벤트</h3>
             {/* 이벤트 1 */}
             <Link href="/events/test">
               <div className="cursor-pointer">

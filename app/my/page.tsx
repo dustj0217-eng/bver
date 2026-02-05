@@ -9,15 +9,6 @@ export default function MyPage() {
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen bg-white flex flex-col">
-        {/* 헤더 */}
-        <header className="sticky top-0 bg-white z-10 border-b">
-          <div className="max-w-3xl mx-auto px-4 h-14 flex items-center">
-            <Link href="/" className="text-2xl">←</Link>
-            <h1 className="flex-1 text-center text-lg font-display font-bold">마이페이지</h1>
-            <div className="w-8"></div>
-          </div>
-        </header>
-
         {/* 로그인 필요 안내 */}
         <div className="flex-1 flex flex-col items-center justify-center px-4">
           <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6">

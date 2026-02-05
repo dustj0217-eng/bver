@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Header, Footer, FullMenu, MobileNav } from '../components/Layout';
 import { HomeSection } from '../components/Sections';
 import { useRouter } from 'next/navigation';
 
@@ -34,22 +33,9 @@ export default function MainPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header onMenuOpen={() => setMenuOpen(true)} />
-      <FullMenu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
-      
-      <main className="pt-14 md:pt-16 pb-20 md:pb-8">
+      <main className="">
         <HomeSection visibleSections={visibleSections} sectionRefs={sectionRefs} />
       </main>
-      
-      <Footer />
-      <MobileNav 
-        activeTab="home" 
-        onTabChange={(tab) => {
-          if (tab === 'goods') router.push('/goods');
-          else if (tab === 'popup') router.push('/popup');
-          else if (tab === 'my') router.push('/my');
-        }} 
-      />
 
       <style jsx global>{`
         @font-face {

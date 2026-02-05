@@ -1,11 +1,10 @@
 'use client';
 
-import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
 export default function PopupPage() {
-  const [tab, setTab] = useState<'ongoing' | 'past'>('ongoing');
+  const [tab] = useState<'ongoing' | 'past'>('ongoing');
   const [popups, setPopups] = useState([
     {
       id: '1',
@@ -41,15 +40,6 @@ export default function PopupPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* 헤더 */}
-      <header className="sticky top-0 bg-white z-10 border-b">
-        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center">
-          <Link href="/" className="text-2xl">←</Link>
-          <h1 className="flex-1 text-center text-lg font-display font-bold">팝업스토어</h1>
-          <div className="w-8"></div>
-        </div>
-      </header>
-
       {/* 팝업 목록 - 포스터 느낌 */}
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="space-y-20">

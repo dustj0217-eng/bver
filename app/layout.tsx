@@ -1,20 +1,21 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import type { Metadata } from 'next';
+import { Geist, Geist_Mono } from 'next/font/google';
+import './globals.css';
+import AppLayout from '../components/AppLayout';
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
 });
 
 export const metadata: Metadata = {
-  title: "비버하우스 - Beaver House",
-  description: "비버하우스 공식 스토어 - 쉼 없이 오늘을 살아가는 비버들의 이야기",
+  title: '비버하우스 - Beaver House',
+  description: '비버하우스 공식 스토어 - 쉼 없이 오늘을 살아가는 비버들의 이야기',
   manifest: '/manifest.webmanifest',
   themeColor: '#000000',
   appleWebApp: {
@@ -31,9 +32,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="ko">
       <head>
@@ -43,7 +44,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <AppLayout>{children}</AppLayout>
       </body>
     </html>
   );
