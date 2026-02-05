@@ -160,3 +160,86 @@ export async function getProduct(id: string): Promise<Product | null> {
   if (!notionPage) return null;
   return convertNotionToProduct(notionPage);
 }
+
+//
+//
+// 팝업스토어 데이터 타입
+export interface PopupStore {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  location: string;
+  description: string[];
+  bgColor: string;
+  image: string;
+}
+
+// 노션 데이터를 팝업 데이터 형식으로 변환
+export function convertNotionToPopup(notionPage: any): PopupStore {
+  const properties = notionPage.properties;
+
+  // Description을 배열로 변환 (줄바꿈 기준으로 분리)
+  const descriptionText = parseNotionProperty(properties.Description) || '';
+  const descriptionArray = descriptionText.split('\n').filter((line: string) => line.trim());
+
+  return {
+    id: notionPage.id,
+    title: parseNotionProperty(properties.Title) || '제목 없음',
+    date: parseNotionProperty(properties.Date) || '',
+    time: parseNotionProperty(properties.Time) || '',
+    location: parseNotionProperty(properties.Location) || '',
+    description: descriptionArray,
+    bgColor: parseNotionProperty(properties.BgColor) || '#F5F5F5',
+    image: parseNotionProperty(properties.Image) || '',
+  };
+}
+
+// 팝업스토어용 데이터베이스 ID
+const POPUP_DATABASE_ID = formatNotionId(process.env.NOTION_POPUP_DATABASE_ID || '');
+
+// 팝업 데이터 가져오기
+export async function getPopupData() {
+  try {
+    const response = await fetch(
+      `https://api.notion.com/v1/databases/${POPUP_DATABASE_ID}/query`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${NOTION_TOKEN}`,
+          'Notion-Version': NOTION_VERSION,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          // 일단 정렬 없이 전체 가져오기
+        }),
+        cache: 'no-store',
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Notion API 에러 상세:', errorData);
+      throw new Error(`Notion API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.results;
+  } catch (error) {
+    console.error('Notion Popup API Error:', error);
+    return [];
+  }
+}
+
+// 모든 팝업스토어 가져오기
+export async function getAllPopups(): Promise<PopupStore[]> {
+  const notionData = await getPopupData();
+  return notionData.map(convertNotionToPopup);
+}
+
+// 단일 팝업 가져오기
+export async function getPopup(id: string): Promise<PopupStore | null> {
+  const notionPage = await getNotionPage(id);
+  if (!notionPage) return null;
+  return convertNotionToPopup(notionPage);
+}
