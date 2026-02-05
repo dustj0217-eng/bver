@@ -12,7 +12,8 @@ interface HomeSectionProps {
 }
 
 export function HomeSection({ visibleSections, sectionRefs }: HomeSectionProps) {
-  const [products, setProducts] = useState(allProducts); // 일단 기본값
+  const [products, setProducts] = useState(allProducts);
+  const [popups, setPopups] = useState(popupStores);
 
   // 컴포넌트 마운트되면 Notion 데이터 가져오기
   useEffect(() => {
@@ -27,6 +28,18 @@ export function HomeSection({ visibleSections, sectionRefs }: HomeSectionProps) 
         console.error('상품 못 가져옴:', err);
         // 에러나도 그냥 기본 더미 데이터 쓰면 됨
       });
+  }, []);
+
+  // 팝업 데이터 가져오기 ⭐ 추가
+  useEffect(() => {
+    fetch('/api/popups')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.length > 0) {
+          setPopups(data);
+        }
+      })
+      .catch(err => console.error('팝업 못 가져옴:', err));
   }, []);
 
   return (
@@ -125,7 +138,7 @@ export function HomeSection({ visibleSections, sectionRefs }: HomeSectionProps) 
             }}
             style={{ paddingLeft: '16px' }}
           >
-            {popupStores.map((popup) => (
+            {popups.map((popup) => (
               <SwiperSlide key={popup.id}>
                 <div
                   className="h-32 md:h-36 rounded-lg p-4 md:p-5 flex flex-col justify-between transition-transform duration-300"
