@@ -312,22 +312,22 @@ export default function MyPage() {
 
               <div>
                 <label className="text-xs text-gray-500 block mb-1">우편번호</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={shippingInfo.zipcode}
-                    onChange={(e) => setShippingInfo(prev => ({ ...prev, zipcode: e.target.value }))}
-                    placeholder="우편번호"
-                    className="flex-1 border border-gray-200 rounded-lg px-4 py-3 text-sm"
-                  />
-                  <button 
-                    type="button"
-                    onClick={handleAddressSearch}
-                    className="px-4 py-3 bg-gray-100 rounded-lg text-sm font-medium whitespace-nowrap"
-                  >
-                    주소 검색
-                  </button>
-                </div>
+
+                <input
+                  type="text"
+                  value={shippingInfo.zipcode}
+                  onChange={(e) => setShippingInfo(prev => ({ ...prev, zipcode: e.target.value }))}
+                  placeholder="우편번호"
+                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm"
+                />
+
+                <button 
+                  type="button"
+                  onClick={handleAddressSearch}
+                  className="mt-2 w-full px-4 py-3 bg-gray-100 rounded-lg text-sm font-medium"
+                >
+                  주소 검색
+                </button>
               </div>
 
               <div>

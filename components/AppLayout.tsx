@@ -35,8 +35,6 @@ export default function AppLayout({
           if (tab === 'my') router.push('/my');
         }}
       />
-
-      <Footer />
     </>
   );
 }
