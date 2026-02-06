@@ -353,45 +353,25 @@ export function HomeSection({ visibleSections, sectionRefs }: HomeSectionProps) 
           }`}
         >
           <h3 className="text-lg md:text-xl font-display font-bold mb-4 md:mb-6 grid md:grid-cols-2">진행중 이벤트</h3>
-            {/* 이벤트 1 */}
-            <Link href="/events/test">
-              <div className="cursor-pointer">
-                <div className="relative aspect-video mb-3 rounded-lg overflow-hidden bg-gray-100">
-                  <Image
-                    src="/test.jpg"
-                    alt="비버 테스트"
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <h4 className="font-display font-bold mb-2 text-base md:text-lg">
-                  비버 테스트
-                </h4>
-                <p className="text-sm md:text-base text-gray-600">
-                  나는 어떤 비버일까?
-                </p>
+          {/* 이벤트 1 */}
+          <Link href="/events/test">
+            <div className="cursor-pointer">
+              <div className="relative aspect-video mb-3 rounded-lg overflow-hidden bg-gray-100">
+                <Image
+                  src="/test.jpg"
+                  alt="비버 테스트"
+                  fill
+                  className="object-cover"
+                />
               </div>
-            </Link>
-
-            {/* 이벤트 2 */}
-            <Link href="/events/follow">
-              <div className="cursor-pointer">
-                <div className="relative aspect-video mb-3 rounded-lg overflow-hidden bg-gray-100">
-                  <Image
-                    src="/follow.jpg"
-                    alt="홍대 팝업스토어 오픈"
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <h4 className="font-display font-bold mb-2 text-base md:text-lg">
-                  비버하우스 팔로우 이벤트
-                </h4>
-                <p className="text-sm md:text-base text-gray-600">
-                  공식 인스타그램 팔로우하고 기프티콘 받아가기
-                </p>
-              </div>
-            </Link>
+              <h4 className="font-display font-bold mb-2 text-base md:text-lg">
+                비버 테스트
+              </h4>
+              <p className="text-sm md:text-base text-gray-600">
+                나는 어떤 비버일까?
+              </p>
+            </div>
+          </Link>
         </div>
       </section>
     </>

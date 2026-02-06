@@ -8,13 +8,13 @@ export default function PopupPage() {
   const [popups, setPopups] = useState([
     {
       id: '1',
-      title: '비버의 대탈출',
-      date: '2026.02.07',
-      time: '14:00 – 18:30',
-      location: '합정 오아시스 랩',
-      description: ['게임 속 세계로 떨어진 비버.'],
+      title: '',
+      date: '',
+      time: '',
+      location: '',
+      description: [''],
       bgColor: '#F5F5F5',
-      image: '/poster-1.png',
+      image: '',
     }
   ]);
 
@@ -72,7 +72,7 @@ export default function PopupPage() {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <span className="text-6xl">📍</span>
+                    <span className="text-6xl"></span>
                   </div>
                 )}
               </div>

@@ -6,18 +6,18 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase';
 import { addToCart } from '@/lib/firestore';
-import Toast from '@/components/Toast';
 
 export default function ProductDetail({ product }: { product: any }) {
   const router = useRouter();
   const [adding, setAdding] = useState(false);
-  const [showToast, setShowToast] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const handleAddToCart = async () => {
     const user = auth.currentUser;
     
     if (!user) {
-      router.push('/my/login');
+      setShowLoginModal(true);
       return;
     }
 
@@ -26,7 +26,7 @@ export default function ProductDetail({ product }: { product: any }) {
     setAdding(true);
     try {
       await addToCart(user.uid, product.id, 1);
-      setShowToast(true);
+      setShowSuccessModal(true);
     } catch (error) {
       alert('오류가 발생했습니다');
       console.error(error);
@@ -37,22 +37,69 @@ export default function ProductDetail({ product }: { product: any }) {
 
   return (
     <>
-      {showToast && (
-        <Toast 
-          message="장바구니에 담았습니다" 
-          onClose={() => setShowToast(false)} 
-        />
+      {/* 장바구니 담기 성공 모달 */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div 
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowSuccessModal(false)}
+          />
+          <div className="relative bg-white rounded-2xl p-6 max-w-sm w-full">
+            <div className="text-center mb-6">
+              <h3 className="text-lg font-bold mb-2">장바구니에 담았습니다</h3>
+              <p className="text-sm text-gray-500">마이페이지에서 확인하세요</p>
+            </div>
+            <div className="space-y-2">
+              <button
+                onClick={() => router.push('/my')}
+                className="w-full py-4 bg-gray-900 text-white rounded-lg font-semibold"
+              >
+                장바구니 보러가기
+              </button>
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full py-4 bg-gray-100 text-gray-900 rounded-lg font-semibold"
+              >
+                계속 쇼핑하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 로그인 필요 모달 */}
+      {showLoginModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div 
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowLoginModal(false)}
+          />
+          <div className="relative bg-white rounded-2xl p-6 max-w-sm w-full">
+            <div className="text-center mb-6">
+              <h3 className="text-lg font-bold mb-2">로그인이 필요합니다</h3>
+              <p className="text-sm text-gray-500">
+                장바구니 기능은 로그인 후 이용할 수 있어요
+              </p>
+            </div>
+            <div className="space-y-2">
+              <button
+                onClick={() => router.push('/my/login')}
+                className="w-full py-4 bg-gray-900 text-white rounded-lg font-semibold"
+              >
+                로그인하기
+              </button>
+              <button
+                onClick={() => setShowLoginModal(false)}
+                className="w-full py-4 bg-gray-100 text-gray-900 rounded-lg font-semibold"
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       
       <div className="min-h-screen bg-white">
-        <header className="sticky top-0 bg-white z-10 border-b border-gray-100">
-          <div className="max-w-3xl mx-auto px-4 h-14 flex items-center">
-            <Link href="/goods" className="text-xl">←</Link>
-            <h1 className="flex-1 text-center text-base font-medium">상품</h1>
-            <div className="w-6"></div>
-          </div>
-        </header>
-
         <main className="max-w-3xl mx-auto">
           <div
             className="relative aspect-square w-full"
@@ -123,7 +170,7 @@ export default function ProductDetail({ product }: { product: any }) {
             )}
           </div>
 
-          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4">
+          <div className="fixed bottom-10 md:bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4">
             <div className="max-w-3xl mx-auto">
               <button
                 onClick={handleAddToCart}

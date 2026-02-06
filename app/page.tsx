@@ -38,17 +38,6 @@ export default function MainPage() {
       </main>
 
       <style jsx global>{`
-        @font-face {
-            font-family: 'OmuDaye';
-            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-01@1.0/omyu_pretty.woff2') format('woff2');
-            font-weight: normal;
-            font-display: swap;
-        }
-
-        .font-display {
-          font-family: 'OmuDaye', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        }
-
         html {
           scroll-behavior: smooth;
         }

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Menu, X, Instagram, Youtube } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image'
 
 interface HeaderProps {
   onMenuOpen: () => void;
@@ -29,10 +30,27 @@ export function Header() {
         >
           <Menu size={24} />
         </button>
-        <Link href={"/"}>
-          <h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-xl md:text-2xl font-bold">
-            BEAVER HOUSE
-          </h1>
+
+        <Link
+          href="/"
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+        >
+          <div className="flex items-center gap-2">
+            <Image
+              src="/logo.png"
+              alt="Beaver House logo"
+              width={30}
+              height={30}
+              priority
+            />
+            <Image
+              src="/logo-text.png"
+              alt="Beaver House text logo"
+              width={129}
+              height={40}
+              priority
+            />
+          </div>
         </Link>
       </header>
 
