@@ -8,7 +8,18 @@ import Image from 'next/image';
 import { onAuthStateChanged, signOut, User } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
-import { getCart, removeFromCart, getLikes, getOrders, createOrder } from '@/lib/firestore';
+import { 
+  getCart, 
+  removeFromCart, 
+  getLikes, 
+  getOrders, 
+  createOrder,
+  getPoints,
+  addPoints 
+} from '@/lib/firestore';
+
+import CheckoutModal from './CheckoutModal';
+import RewardAdButton from './RewardAdButton';
 
 // 배송지 타입
 interface ShippingAddress {
@@ -34,6 +45,9 @@ export default function MyPage() {
   const [likedProducts, setLikedProducts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
 
+  // 포인트 상태 (컴포넌트 내부로 이동)
+  const [points, setPoints] = useState(0);
+
   // 배송지 정보
   const [shippingInfo, setShippingInfo] = useState<ShippingAddress>({
     name: '',
@@ -47,8 +61,6 @@ export default function MyPage() {
 
   // 결제 모달
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'transfer' | 'phone'>('card');
-  const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -77,6 +89,10 @@ export default function MyPage() {
         });
         setName('사용자');
       }
+
+      // 포인트 로드
+      const userPoints = await getPoints(currentUser.uid);
+      setPoints(userPoints);
 
       setLoading(false);
     });
@@ -172,7 +188,7 @@ export default function MyPage() {
     setCartItems(prev => prev.filter(item => item.productId !== productId));
   };
 
-  const handleCheckout = async () => {
+  const handleOpenCheckout = () => {
     if (!user) {
       alert('로그인이 필요합니다');
       return;
@@ -192,36 +208,35 @@ export default function MyPage() {
     setShowCheckoutModal(true);
   };
 
-  const handlePayment = async () => {
+  const handlePaymentComplete = async (transferInfo: any) => {
     if (!user) return;
 
-    setProcessing(true);
-
-    try {
-      // 가상 결제 처리 (2초 딜레이)
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // 주문 생성
-      await createOrder(user.uid, cartItems, totalCartPrice);
-      
-      // 장바구니 비우기
-      for (const item of cartItems) {
-        await removeFromCart(user.uid, item.productId);
-      }
-      
-      setCartItems([]);
-      setShowCheckoutModal(false);
-      setProcessing(false);
-      
-      alert('주문이 완료되었습니다!\n(실제 결제는 연동 후 진행됩니다)');
-      
-      // 주문 내역 탭 열기
-      setOpenSection('orders');
-    } catch (error) {
-      console.error(error);
-      alert('주문 중 오류가 발생했습니다');
-      setProcessing(false);
+    // 주문 생성
+    await createOrder(user.uid, cartItems, totalCartPrice, {
+      paymentMethod: 'transfer',
+      transferInfo,
+      status: 'pending'
+    });
+    
+    // 장바구니 비우기
+    for (const item of cartItems) {
+      await removeFromCart(user.uid, item.productId);
     }
+    
+    setCartItems([]);
+    setShowCheckoutModal(false);
+    
+    alert(`입금 정보가 접수되었습니다!\n\n입금자명: ${transferInfo.depositorName}\n입금 금액: ${totalCartPrice.toLocaleString()}원\n\n입금 확인 후 주문이 처리됩니다.`);
+    
+    setOpenSection('orders');
+  };
+
+  // 포인트 적립 핸들러
+  const handleRewardEarned = async (earnedPoints: number) => {
+    if (!user) return;
+    
+    await addPoints(user.uid, earnedPoints);
+    setPoints(prev => prev + earnedPoints);
   };
 
   if (loading) {
@@ -260,161 +275,15 @@ export default function MyPage() {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] pb-20">
-      {/* 결제 모달 */}
-      {showCheckoutModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div 
-            className="absolute inset-0 bg-black/50"
-            onClick={() => !processing && setShowCheckoutModal(false)}
-          />
-          <div className="relative bg-white rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-6">주문/결제</h2>
-
-            {/* 배송지 정보 */}
-            <div className="mb-6">
-              <h3 className="text-sm font-semibold mb-3">배송지</h3>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-sm font-medium mb-1">{shippingInfo.name}</p>
-                <p className="text-sm text-gray-600 mb-1">{shippingInfo.phone}</p>
-                <p className="text-sm text-gray-600">
-                  ({shippingInfo.zipcode}) {shippingInfo.address}
-                </p>
-                {shippingInfo.addressDetail && (
-                  <p className="text-sm text-gray-600">{shippingInfo.addressDetail}</p>
-                )}
-              </div>
-            </div>
-
-            {/* 주문 상품 */}
-            <div className="mb-6">
-              <h3 className="text-sm font-semibold mb-3">주문 상품 ({cartItems.length}개)</h3>
-              <div className="space-y-3">
-                {cartItems.map((item) => (
-                  <div key={item.productId} className="flex gap-3 text-sm">
-                    <div 
-                      className="w-16 h-16 rounded-lg flex-shrink-0"
-                      style={{ backgroundColor: item.product?.bgColor || '#f3f4f6' }}
-                    >
-                      {item.product?.image && (
-                        <Image
-                          src={item.product.image}
-                          alt={item.product.name}
-                          width={64}
-                          height={64}
-                          className="w-full h-full object-cover rounded-lg"
-                        />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{item.product?.name}</p>
-                      <p className="text-gray-500 text-xs">수량 {item.quantity}개</p>
-                      <p className="font-semibold mt-1">
-                        {((item.product?.price || 0) * item.quantity).toLocaleString()}원
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 결제 방법 */}
-            <div className="mb-6">
-              <h3 className="text-sm font-semibold mb-3">결제 방법</h3>
-              <div className="space-y-2">
-                <button
-                  onClick={() => setPaymentMethod('card')}
-                  className={`w-full p-4 rounded-lg border-2 text-left transition-colors ${
-                    paymentMethod === 'card' 
-                      ? 'border-gray-900 bg-gray-50' 
-                      : 'border-gray-200'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">신용/체크카드</span>
-                    {paymentMethod === 'card' && <span className="text-xl">✓</span>}
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    토스페이먼츠 연동 예정
-                  </p>
-                </button>
-                
-                <button
-                  onClick={() => setPaymentMethod('transfer')}
-                  className={`w-full p-4 rounded-lg border-2 text-left transition-colors ${
-                    paymentMethod === 'transfer' 
-                      ? 'border-gray-900 bg-gray-50' 
-                      : 'border-gray-200'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">실시간 계좌이체</span>
-                    {paymentMethod === 'transfer' && <span className="text-xl">✓</span>}
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    네이버페이 연동 예정
-                  </p>
-                </button>
-
-                <button
-                  onClick={() => setPaymentMethod('phone')}
-                  className={`w-full p-4 rounded-lg border-2 text-left transition-colors ${
-                    paymentMethod === 'phone' 
-                      ? 'border-gray-900 bg-gray-50' 
-                      : 'border-gray-200'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">휴대폰 결제</span>
-                    {paymentMethod === 'phone' && <span className="text-xl">✓</span>}
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    카카오페이 연동 예정
-                  </p>
-                </button>
-              </div>
-            </div>
-
-            {/* 최종 결제 금액 */}
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-gray-600">상품 금액</span>
-                <span className="text-sm">{totalCartPrice.toLocaleString()}원</span>
-              </div>
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-gray-600">배송비</span>
-                <span className="text-sm">무료</span>
-              </div>
-              <div className="border-t border-gray-200 my-3"></div>
-              <div className="flex justify-between items-center">
-                <span className="font-semibold">최종 결제 금액</span>
-                <span className="text-xl font-bold">{totalCartPrice.toLocaleString()}원</span>
-              </div>
-            </div>
-
-            {/* 버튼 */}
-            <div className="space-y-2">
-              <button
-                onClick={handlePayment}
-                disabled={processing}
-                className="w-full py-4 bg-gray-900 text-white rounded-lg font-semibold disabled:bg-gray-400"
-              >
-                {processing ? '결제 처리 중...' : `${totalCartPrice.toLocaleString()}원 결제하기`}
-              </button>
-              <button
-                onClick={() => setShowCheckoutModal(false)}
-                disabled={processing}
-                className="w-full py-4 bg-gray-100 text-gray-900 rounded-lg font-semibold disabled:bg-gray-300"
-              >
-                취소
-              </button>
-            </div>
-
-            <p className="text-xs text-center text-gray-400 mt-4">
-              ※ 현재는 테스트 모드입니다. 실제 결제는 진행되지 않습니다.
-            </p>
-          </div>
-        </div>
-      )}
+      {/* CheckoutModal 사용 */}
+      <CheckoutModal
+        isOpen={showCheckoutModal}
+        onClose={() => setShowCheckoutModal(false)}
+        cartItems={cartItems}
+        totalPrice={totalCartPrice}
+        shippingInfo={shippingInfo}
+        onPaymentComplete={handlePaymentComplete}
+      />
 
       {/* 프로필 카드 */}
       <div className="">
@@ -483,15 +352,13 @@ export default function MyPage() {
 
               <div>
                 <label className="text-xs text-gray-500 block mb-1">우편번호</label>
-
                 <input
                   type="text"
                   value={shippingInfo.zipcode}
-                  onChange={(e) => setShippingInfo(prev => ({ ...prev, zipcode: e.target.value }))}
+                  readOnly
                   placeholder="우편번호"
-                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm"
+                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm bg-gray-50"
                 />
-
                 <button 
                   type="button"
                   onClick={handleAddressSearch}
@@ -506,9 +373,9 @@ export default function MyPage() {
                 <input
                   type="text"
                   value={shippingInfo.address}
-                  onChange={(e) => setShippingInfo(prev => ({ ...prev, address: e.target.value }))}
+                  readOnly
                   placeholder="기본 주소"
-                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm mb-2"
+                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm mb-2 bg-gray-50"
                 />
                 <input
                   type="text"
@@ -642,7 +509,7 @@ export default function MyPage() {
                   </span>
                 </div>
                 <button 
-                  onClick={handleCheckout}
+                  onClick={handleOpenCheckout}
                   className="w-full py-4 bg-gray-900 text-white rounded-xl font-semibold"
                 >
                   주문하기
@@ -739,10 +606,31 @@ export default function MyPage() {
           open={openSection === 'coupon'}
           onClick={() => setOpenSection(openSection === 'coupon' ? null : 'coupon')}
         >
-          <EmptyState 
-            text="보유 중인 쿠폰이 없습니다" 
-            subtext="이벤트에 참여해보세요"
-          />
+          <div className="pt-2 space-y-4">
+            {/* 쿠폰 */}
+            <div>
+              <EmptyState 
+                text="보유 중인 쿠폰이 없습니다" 
+                subtext="이벤트에 참여해보세요"
+              />
+            </div>
+
+            {/* 포인트 카드 */}
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">보유 포인트</p>
+                  <p className="text-3xl font-bold text-gray-900">{points.toLocaleString()}P</p>
+                </div>
+              </div>
+              
+              <RewardAdButton onRewardEarned={handleRewardEarned} />
+              
+              <p className="text-xs text-gray-500 text-center mt-3">
+                광고 시청으로 포인트를 모아 구매 시 사용하세요
+              </p>
+            </div>
+          </div>
         </Accordion>
 
         <button

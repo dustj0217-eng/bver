@@ -1,3 +1,4 @@
+// lib/firestore.ts
 import { db } from './firebase';
 import { 
   collection, 
@@ -61,7 +62,7 @@ export async function getLikes(userId: string) {
 }
 
 // 주문 생성 시 items 배열에 상품 정보도 같이 저장
-export async function createOrder(userId: string, items: any[], totalPrice: number) {
+export async function createOrder(userId: string, items: any[], totalPrice: number, p0: { paymentMethod: string; transferInfo: any; status: string; }) {
   const ordersRef = collection(db, 'users', userId, 'orders');
   const orderDoc = doc(ordersRef);
   
@@ -90,4 +91,42 @@ export async function getOrders(userId: string) {
     id: doc.id,
     ...doc.data()
   }));
+}
+
+//
+//
+// 포인트
+// 포인트 조회
+export async function getPoints(userId: string): Promise<number> {
+  const userDoc = await getDoc(doc(db, 'users', userId));
+  return userDoc.data()?.points || 0;
+}
+
+// 포인트 적립
+export async function addPoints(userId: string, points: number): Promise<void> {
+  const userRef = doc(db, 'users', userId);
+  const userDoc = await getDoc(userRef);
+  const currentPoints = userDoc.data()?.points || 0;
+  
+  await setDoc(userRef, {
+    points: currentPoints + points,
+    lastPointsEarned: new Date(),
+  }, { merge: true });
+}
+
+// 포인트 사용
+export async function usePoints(userId: string, points: number): Promise<boolean> {
+  const userRef = doc(db, 'users', userId);
+  const userDoc = await getDoc(userRef);
+  const currentPoints = userDoc.data()?.points || 0;
+  
+  if (currentPoints < points) {
+    return false; // 포인트 부족
+  }
+  
+  await setDoc(userRef, {
+    points: currentPoints - points,
+  }, { merge: true });
+  
+  return true;
 }
