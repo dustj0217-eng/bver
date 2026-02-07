@@ -1,7 +1,6 @@
-// app/api/chat/route.ts
+// app/api/chat/route.ts (Gemini 버전 - 무료!)
 
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,7 +8,7 @@ export async function POST(request: NextRequest) {
 
     console.log('📨 Received request:', { messageCount: messages?.length, stats });
 
-    // API 키 확인
+    // Gemini API 키 확인
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       console.error('❌ GEMINI_API_KEY not found');
@@ -19,13 +18,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Gemini 클라이언트 초기화
-    const ai = new GoogleGenAI({ apiKey });
-
     // 스탯 기반 성격 설정
     const personality = generatePersonality(stats);
 
-    // 대화 내용을 프롬프트로 변환
+    // 대화 내용을 Gemini 형식으로 변환
     const conversationHistory = messages
       .map((msg: any) => `${msg.sender === 'user' ? 'User' : 'Beaver'}: ${msg.text}`)
       .join('\n');
@@ -39,14 +35,41 @@ ${conversationHistory}
 
     console.log('🤖 Calling Gemini API...');
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
-      contents: prompt,
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: prompt
+                }
+              ]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.8,
+            maxOutputTokens: 150,
+          }
+        }),
+      }
+    );
 
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('❌ Gemini API error:', response.status, errorData);
+      throw new Error(`Gemini API error: ${response.status}`);
+    }
+
+    const data = await response.json();
     console.log('✅ Gemini response received');
     
-    const aiText = response.text;
+    const aiText = data.candidates[0].content.parts[0].text;
     
     // 응답에서 스탯 변화 분석
     const statChange = analyzeResponse(aiText);
