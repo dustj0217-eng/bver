@@ -1,3 +1,5 @@
+// app/my/components/RewardAdButton.tsx
+
 'use client';
 
 import { useState, useEffect } from 'react';

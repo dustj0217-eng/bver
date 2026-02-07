@@ -1,3 +1,4 @@
+// app/events/beaver-test/page.tsx
 'use client';
 
 import { useState } from 'react';

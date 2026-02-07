@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+// components/Sections.tsx
+
+import { useEffect, useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination } from 'swiper/modules';
 import 'swiper/css';
@@ -6,15 +8,30 @@ import 'swiper/css/pagination';
 import { popupStores, allProducts } from '../lib/data';
 import Link from 'next/link';
 import Image from 'next/image';
+import { getActiveEvents } from '@/lib/notion';
 
 interface HomeSectionProps {
   visibleSections: Set<string>;
   sectionRefs: React.MutableRefObject<{ [key: string]: HTMLElement | null }>;
 }
 
+// 더미 이벤트 (맨 위 상수 선언 부분에)
+const defaultEvents = [
+  {
+    id: 'default-1',
+    title: '곧 만나요!',
+    description: '새로운 이벤트가 준비 중입니다',
+    image: '/logo.png',
+    bgColor: '#F5F5F5',
+    linkUrl: '/events',
+    endDate: '',
+  }
+];
+
 export function HomeSection({ visibleSections, sectionRefs }: HomeSectionProps) {
   const [products, setProducts] = useState(allProducts);
-  const [popups, setPopups] = useState(popupStores);
+  const [popups] = useState(popupStores);
+  const [events, setEvents] = useState(defaultEvents); // ⭐ 추가
 
   // 컴포넌트 마운트되면 Notion 데이터 가져오기
   useEffect(() => {
@@ -31,16 +48,16 @@ export function HomeSection({ visibleSections, sectionRefs }: HomeSectionProps) 
       });
   }, []);
 
-  // 팝업 데이터 가져오기 ⭐ 추가
+  // 팝업 데이터 가져오기 ⭐ 이거 그대로 복사
   useEffect(() => {
-    fetch('/api/popups')
+    fetch('/api/events/active')
       .then(res => res.json())
       .then(data => {
         if (data && data.length > 0) {
-          setPopups(data);
+          setEvents(data);
         }
       })
-      .catch(err => console.error('팝업 못 가져옴:', err));
+      .catch(err => console.error('이벤트 못 가져옴:', err));
   }, []);
 
   return (
@@ -341,39 +358,70 @@ export function HomeSection({ visibleSections, sectionRefs }: HomeSectionProps) 
         </div>
       </section>
 
-      <section className="px-4 mb-20 md:mb-24 max-w-3xl mx-auto">
-        <div className='border-y border-gray-200 mb-8 md:mb-10'></div>
-        <div
-          id="events-section"
-          ref={(el) => { sectionRefs.current['events-section'] = el; }}
-          className={`transition-all duration-1000 ${
-            visibleSections.has('events-section')
-              ? 'opacity-100 translate-y-0'
-              : 'opacity-0 translate-y-10'
-          }`}
-        >
-          <h3 className="text-lg md:text-xl font-display font-bold mb-4 md:mb-6 grid md:grid-cols-2">진행중 이벤트</h3>
-          {/* 이벤트 1 */}
-          <Link href="/events/test">
-            <div className="cursor-pointer">
-              <div className="relative aspect-video mb-3 rounded-lg overflow-hidden bg-gray-100">
-                <Image
-                  src="/test.jpg"
-                  alt="비버 테스트"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <h4 className="font-display font-bold mb-2 text-base md:text-lg">
-                비버 테스트
-              </h4>
-              <p className="text-sm md:text-base text-gray-600">
-                나는 어떤 비버일까?
-              </p>
-            </div>
+      {/* 진행중인 이벤트 섹션 */}
+      {events.length > 0 && (
+        <section className="px-4 md:px-6 py-8 md:py-12">
+          <h3 className="text-lg md:text-xl font-display font-bold mb-4 md:mb-6">
+            진행중인 이벤트
+          </h3>
+          
+          <div className="grid md:grid-cols-2 gap-4 md:gap-6">
+            {events.map((event) => (
+              <Link 
+                key={event.id} 
+                href={event.linkUrl || `/events/${event.id}`}
+              >
+                <div className="cursor-pointer">
+                  <div 
+                    className="relative aspect-video mb-3 rounded-lg overflow-hidden"
+                    style={{ backgroundColor: event.bgColor }}
+                  >
+                    {event.image && (
+                      <Image
+                        src={event.image}
+                        alt={event.title}
+                        fill
+                        className="object-cover"
+                      />
+                    )}
+                  </div>
+                  <h4 className="font-display font-bold mb-2 text-base md:text-lg">
+                    {event.title}
+                  </h4>
+                  <p className="text-sm md:text-base text-gray-600">
+                    {event.description}
+                  </p>
+                  
+                  {/* 종료일 D-day 표시 */}
+                  {event.endDate && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {getDday(event.endDate)}
+                    </p>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+          
+          <Link 
+            href="/events" 
+            className="block text-center mt-6 text-sm text-gray-600 hover:text-gray-900"
+          >
+            진행 중인 이벤트 모두 보기 &gt;
           </Link>
-        </div>
-      </section>
+        </section>
+      )}
     </>
   );
+}
+
+// D-day 계산 헬퍼
+function getDday(endDate: string): string {
+  const today = new Date();
+  const end = new Date(endDate);
+  const diff = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  
+  if (diff === 0) return '오늘 마감';
+  if (diff < 0) return '종료됨';
+  return `D-${diff}`;
 }

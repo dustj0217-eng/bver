@@ -242,3 +242,118 @@ export async function getPopup(id: string): Promise<PopupStore | null> {
   if (!notionPage) return null;
   return convertNotionToPopup(notionPage);
 }
+
+//
+//
+// 이벤트
+// 이벤트 데이터 타입
+export interface Event {
+  id: string;
+  title: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  image: string;
+  bgColor: string;
+  status: string;
+  priority: number;
+  linkUrl: string;
+  couponCode: string;
+  tags: string[];
+}
+
+// 노션 데이터를 이벤트 데이터 형식으로 변환
+export function convertNotionToEvent(notionPage: any): Event {
+  const properties = notionPage.properties;
+
+  return {
+    id: notionPage.id,
+    title: parseNotionProperty(properties.Title) || '제목 없음',
+    description: parseNotionProperty(properties.description) || '',
+    startDate: parseNotionProperty(properties.startDate) || '',
+    endDate: parseNotionProperty(properties.endDate) || '',
+    image: parseNotionProperty(properties.image) || '',
+    bgColor: parseNotionProperty(properties.bgColor) || '#F5F5F5',
+    status: parseNotionProperty(properties.status) || '진행중',
+    priority: parseNotionProperty(properties.priority) || 0,
+    linkUrl: parseNotionProperty(properties.linkUrl) || '',
+    couponCode: parseNotionProperty(properties.couponCode) || '',
+    tags: parseNotionProperty(properties.tags)?.split(', ') || [],
+  };
+}
+
+// 이벤트용 데이터베이스 ID
+const EVENT_DATABASE_ID = formatNotionId(process.env.NOTION_EVENT_DATABASE_ID || '');
+
+// 이벤트 데이터 가져오기
+export async function getEventData() {
+  try {
+    const response = await fetch(
+      `https://api.notion.com/v1/databases/${EVENT_DATABASE_ID}/query`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${NOTION_TOKEN}`,
+          'Notion-Version': NOTION_VERSION,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sorts: [
+            {
+              property: 'priority',
+              direction: 'descending',
+            },
+            {
+              property: 'startDate',
+              direction: 'descending',
+            },
+          ],
+        }),
+        cache: 'no-store',
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Notion API 에러 상세:', errorData);
+      throw new Error(`Notion API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.results;
+  } catch (error) {
+    console.error('Notion Event API Error:', error);
+    return [];
+  }
+}
+
+// 모든 이벤트 가져오기
+export async function getAllEvents(): Promise<Event[]> {
+  const notionData = await getEventData();
+  return notionData.map(convertNotionToEvent);
+}
+
+// 진행중인 이벤트만 가져오기
+export async function getActiveEvents(): Promise<Event[]> {
+  const events = await getAllEvents();
+  const today = new Date().toISOString().split('T')[0];
+  
+  return events.filter(event => {
+    const start = event.startDate;
+    const end = event.endDate;
+    return start <= today && end >= today;
+  });
+}
+
+// 우선순위 높은 이벤트 (히어로용)
+export async function getHeroEvents(): Promise<Event[]> {
+  const activeEvents = await getActiveEvents();
+  return activeEvents.filter(e => e.priority > 0).slice(0, 3);
+}
+
+// 단일 이벤트 가져오기
+export async function getEvent(id: string): Promise<Event | null> {
+  const notionPage = await getNotionPage(id);
+  if (!notionPage) return null;
+  return convertNotionToEvent(notionPage);
+}

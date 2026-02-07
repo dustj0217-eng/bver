@@ -1,4 +1,4 @@
-// app/my/OrderDetailModal.tsx
+// app/my/components/OrderDetailModal.tsx
 'use client';
 
 import { useState } from 'react';

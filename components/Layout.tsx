@@ -15,8 +15,9 @@ export function Header() {
   const menuItems = [
     { text: 'HOME', href: '/', delay: 0 },
     { text: 'SHOP', href: '/goods', delay: 100 },
-    { text: 'POPUP STORE', href: '/popup', delay: 200 },
-    { text: 'MY BEAVER', href: '/my', delay: 300},
+    { text: 'EVENTS', href: '/events', delay: 200 },
+    { text: 'POPUP STORE', href: '/popup', delay: 300 },
+    { text: 'MY BEAVER', href: '/my', delay: 400},
   ];
 
   return (
