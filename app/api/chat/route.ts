@@ -1,46 +1,68 @@
 // app/api/chat/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
+import { GoogleGenAI } from '@google/genai';
 
 export async function POST(request: NextRequest) {
   try {
     const { messages, stats } = await request.json();
 
+    console.log('📨 Received request:', { messageCount: messages?.length, stats });
+
+    // API 키 확인
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error('❌ GEMINI_API_KEY not found');
+      return NextResponse.json(
+        { error: 'API 키가 설정되지 않았습니다' },
+        { status: 500 }
+      );
+    }
+
+    // Gemini 클라이언트 초기화
+    const ai = new GoogleGenAI({ apiKey });
+
     // 스탯 기반 성격 설정
     const personality = generatePersonality(stats);
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY || '',
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 1024,
-        system: personality,
-        messages: messages.map((msg: any) => ({
-          role: msg.sender === 'user' ? 'user' : 'assistant',
-          content: msg.text,
-        })),
-      }),
+    // 대화 내용을 프롬프트로 변환
+    const conversationHistory = messages
+      .map((msg: any) => `${msg.sender === 'user' ? 'User' : 'Beaver'}: ${msg.text}`)
+      .join('\n');
+
+    const prompt = `${personality}
+
+대화 내역:
+${conversationHistory}
+
+위 대화에 이어서 비버로서 자연스럽게 응답해줘. 응답만 작성하고, "Beaver:" 같은 접두사는 붙이지 마.`;
+
+    console.log('🤖 Calling Gemini API...');
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash-exp',
+      contents: prompt,
     });
 
-    const data = await response.json();
+    console.log('✅ Gemini response received');
+    
+    const aiText = response.text;
     
     // 응답에서 스탯 변화 분석
-    const statChange = analyzeResponse(data.content[0].text);
+    const statChange = analyzeResponse(aiText);
 
     return NextResponse.json({
-      text: data.content[0].text,
+      text: aiText,
       statChange,
     });
 
   } catch (error) {
-    console.error('Chat API error:', error);
+    console.error('💥 Chat API error:', error);
     return NextResponse.json(
-      { error: 'AI 응답 생성 실패' },
+      { 
+        error: 'AI 응답 생성 실패',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
@@ -113,22 +135,16 @@ function generatePersonality(stats: any) {
 }
 
 function analyzeResponse(text: string): { stat: 'affection' | 'empathy' | 'rebellion', points: number } | null {
-  // 응답 내용 분석해서 스탯 변화 결정
-  // 실제로는 더 정교한 분석 필요
-  
   const lowerText = text.toLowerCase();
   
-  // 긍정적 반응 → affection 증가
   if (lowerText.includes('고마워') || lowerText.includes('다행') || lowerText.includes('좋아')) {
     return { stat: 'affection', points: 2 };
   }
   
-  // 공감 표현 → empathy 증가
   if (lowerText.includes('맞아') || lowerText.includes('나도') || lowerText.includes('공감')) {
     return { stat: 'empathy', points: 2 };
   }
   
-  // 부정적/냉소적 → rebellion 증가
   if (lowerText.includes('짜증') || lowerText.includes('최악') || lowerText.includes('ㅈㄴ')) {
     return { stat: 'rebellion', points: 2 };
   }

@@ -1,4 +1,4 @@
-// app/game/chat/page.tsx
+// app/game/chat/page.tsx (디버깅 버전)
 
 'use client';
 
@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Message, Choice, Dialogue } from '../types';
 import { useGameData } from '../hooks/useGameData';
+import { useAIChat } from '../hooks/useAIchat';
 import ChatMessage from '../components/ChatMessage';
 import { 
   getGreetingByTime, 
@@ -16,6 +17,7 @@ import {
 } from '../data/dialogues';
 
 type Theme = 'kakao' | 'line' | 'telegram' | 'beaver';
+type ChatMode = 'scripted' | 'free';
 
 const themes = {
   kakao: {
@@ -69,10 +71,31 @@ export default function ChatPage() {
   const [currentTheme, setCurrentTheme] = useState<Theme>('kakao');
   const [currentChoices, setCurrentChoices] = useState<Choice[] | null>(null);
   const [currentDialogueId, setCurrentDialogueId] = useState<string | null>(null);
+  const [chatMode, setChatMode] = useState<ChatMode>('scripted');
+  const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const initialized = useRef(false);
 
   const theme = themes[currentTheme];
+
+  // AI 채팅 훅
+  const { sendMessage: sendAIMessage, isLoading: aiLoading } = useAIChat({
+    stats: gameData?.stats || { affection: 0, empathy: 0, rebellion: 0 },
+    onStatChange: async (stat, points) => {
+      await increaseStat(stat);
+    },
+  });
+
+  // 디버깅용 console.log 추가
+  useEffect(() => {
+    console.log('현재 모드:', chatMode);
+    console.log('선택지:', currentChoices);
+    console.log('입력창 표시 조건:', {
+      isScripted: chatMode === 'scripted',
+      hasChoices: currentChoices && currentChoices.length > 0,
+      isFree: chatMode === 'free'
+    });
+  }, [chatMode, currentChoices]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -96,18 +119,55 @@ export default function ChatPage() {
       };
       
       setMessages([initMessage]);
-      setCurrentChoices(greeting.choices || null);
+      
+      // 선택지에 "자유롭게 대화하기" 옵션 추가
+      const extendedChoices = [
+        ...(greeting.choices || []),
+        {
+          id: 'free-mode',
+          text: '💬 자유롭게 대화하기',
+          stat: 'affection' as const,
+          nextDialogueId: undefined
+        }
+      ];
+      
+      setCurrentChoices(extendedChoices);
       setCurrentDialogueId(greeting.id);
     }
   }, [loading, gameData]);
 
+  // 스크립트 선택지 처리
   const handleChoice = async (choice: Choice) => {
     const now = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
     
-    // 선택지 제거
     setCurrentChoices(null);
     
-    // 사용자 메시지 추가 (내 말풍선)
+    // "자유롭게 대화하기" 선택 시 바로 자유 모드로
+    if (choice.id === 'free-mode') {
+      const userMessage: Message = {
+        id: `user-${Date.now()}`,
+        sender: 'user',
+        text: choice.text,
+        time: now,
+      };
+      setMessages(prev => [...prev, userMessage]);
+      
+      const beaverResponse: Message = {
+        id: `beaver-${Date.now()}`,
+        sender: 'beaver',
+        text: '오 그래? 뭐든 편하게 얘기해~',
+        time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+      };
+      
+      setTimeout(() => {
+        setMessages(prev => [...prev, beaverResponse]);
+        setChatMode('free');
+        console.log('자유 모드로 전환됨!');
+      }, 800);
+      
+      return;
+    }
+    
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       sender: 'user',
@@ -117,29 +177,25 @@ export default function ChatPage() {
 
     setMessages(prev => [...prev, userMessage]);
 
-    // 스탯 업데이트
     await increaseStat(choice.stat);
     await incrementChatCount();
 
-    // 비버 응답 처리
     setIsTyping(true);
     
     setTimeout(() => {
       let nextDialogue: Dialogue | null = null;
       
-      // nextDialogueId가 있으면 해당 대화를 찾음
       if (choice.nextDialogueId) {
         nextDialogue = getDialogueById(choice.nextDialogueId);
-      } 
-      // nextDialogueId가 없으면 랜덤 대화
-      else {
+      } else {
         nextDialogue = getRandomDialogue(choice.stat);
       }
 
-      // 대화를 찾지 못한 경우 처리
       if (!nextDialogue) {
         setIsTyping(false);
         setCurrentChoices(null);
+        setChatMode('free');
+        console.log('대화 끝 - 자유 모드로 전환');
         return;
       }
 
@@ -153,15 +209,67 @@ export default function ChatPage() {
       setIsTyping(false);
       setMessages(prev => [...prev, beaverMessage]);
       
-      // 엔딩 대화인 경우 선택지 표시 후 더 이상 진행 안 함
       if (nextDialogue.isEnding) {
-        setCurrentChoices(nextDialogue.choices || null);
-        setCurrentDialogueId(null); // 엔딩이므로 대화 ID 초기화
+        const endingChoices = [
+          ...(nextDialogue.choices || []),
+          {
+            id: 'free-mode',
+            text: '💬 자유롭게 대화하기',
+            stat: 'affection' as const,
+          }
+        ];
+        setCurrentChoices(endingChoices);
+        setCurrentDialogueId(null);
       } else {
-        setCurrentChoices(nextDialogue.choices || null);
+        const regularChoices = [
+          ...(nextDialogue.choices || []),
+          {
+            id: 'free-mode',
+            text: '💬 자유롭게 대화하기',
+            stat: 'affection' as const,
+          }
+        ];
+        setCurrentChoices(regularChoices);
         setCurrentDialogueId(nextDialogue.id);
       }
     }, 1500);
+  };
+
+  // 자유 입력 처리
+  const handleFreeInput = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!inputText.trim()) return;
+
+    const now = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+    
+    const userMessage: Message = {
+      id: `user-${Date.now()}`,
+      sender: 'user',
+      text: inputText,
+      time: now,
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputText('');
+    await incrementChatCount();
+
+    setIsTyping(true);
+
+    // AI 응답 받기
+    const newMessages = [...messages, userMessage];
+    const aiResponse = await sendAIMessage(newMessages);
+
+    setIsTyping(false);
+
+    const beaverMessage: Message = {
+      id: `beaver-${Date.now()}`,
+      sender: 'beaver',
+      text: aiResponse,
+      time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    setMessages(prev => [...prev, beaverMessage]);
   };
 
   if (loading) {
@@ -203,6 +311,9 @@ export default function ChatPage() {
             </div>
             <div>
               <div className="font-semibold">비버</div>
+              <div className="text-xs opacity-60">
+                {chatMode === 'scripted' ? '스토리 모드' : 'AI 채팅'}
+              </div>
             </div>
           </div>
 
@@ -263,10 +374,33 @@ export default function ChatPage() {
       {/* 설정 패널 */}
       {showSettings && (
         <div 
-          className="absolute top-16 right-4 z-40 rounded-lg p-4 min-w-[200px]"
+          className="absolute top-16 right-4 z-40 rounded-lg p-4 min-w-[200px] shadow-lg"
           style={{ backgroundColor: theme.header }}
         >
-          <div className="font-semibold mb-3">테마 설정</div>
+          <div className="font-semibold mb-3">설정</div>
+          
+          {/* 대화 모드 전환 - 더 쉽게 */}
+          <div className="mb-4">
+            <div className="text-sm mb-2">대화 모드</div>
+            <button
+              onClick={() => {
+                const newMode = chatMode === 'scripted' ? 'free' : 'scripted';
+                setChatMode(newMode);
+                setShowSettings(false);
+                console.log('모드 전환:', newMode);
+              }}
+              className="w-full text-left px-3 py-2 rounded transition-colors"
+              style={{ 
+                backgroundColor: theme.myBubble,
+                color: theme.myText
+              }}
+            >
+              {chatMode === 'scripted' ? '✨ 자유 채팅으로 전환' : '📖 스토리로 돌아가기'}
+            </button>
+          </div>
+
+          {/* 테마 설정 */}
+          <div className="font-semibold mb-2 text-sm">테마</div>
           <div className="space-y-2">
             {(Object.keys(themes) as Theme[]).map((themeKey) => (
               <button
@@ -275,7 +409,7 @@ export default function ChatPage() {
                   setCurrentTheme(themeKey);
                   setShowSettings(false);
                 }}
-                className="w-full text-left px-3 py-2 rounded transition-colors"
+                className="w-full text-left px-3 py-2 rounded transition-colors text-sm"
                 style={{
                   backgroundColor: currentTheme === themeKey ? theme.myBubble : 'transparent',
                   color: currentTheme === themeKey ? theme.myText : 'inherit'
@@ -304,7 +438,7 @@ export default function ChatPage() {
           ))}
           
           {/* 타이핑 인디케이터 */}
-          {isTyping && (
+          {(isTyping || aiLoading) && (
             <div className="flex gap-2 items-end">
               <div className="relative w-10 h-10 flex-shrink-0">
                 <Image
@@ -352,41 +486,77 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* 하단 입력창 영역 (선택지 표시) */}
-      <div className="fixed left-0 right-0 z-30 border-t bottom-[40px] md:bottom-0 bg-white"
+      {/* 하단 입력창 영역 */}
+      <div className="fixed left-0 right-0 z-30 border-t bottom-[40px] md:bottom-0"
         style={{
           backgroundColor: theme.input,
           borderColor: 'rgba(0,0,0,0.1)',
         }}
       >
         <div className="max-w-2xl mx-auto px-4 py-3">
-          {currentChoices && currentChoices.length > 0 ? (
-            <div className="space-y-2">
-              {currentChoices.map((choice) => (
-                <button
-                  key={choice.id}
-                  onClick={() => handleChoice(choice)}
-                  className="w-full text-left px-4 py-3 rounded-xl transition-all duration-200 active:scale-95"
-                  style={{
-                    backgroundColor: theme.bg,
-                    color: theme.otherText,
-                    opacity: 0.9
-                  }}
-                >
-                  {choice.text}
-                </button>
-              ))}
-            </div>
+          {/* 디버깅 정보 표시 */}
+          <div className="text-xs mb-2 opacity-50 text-center">
+            모드: {chatMode} | 선택지: {currentChoices?.length || 0}개
+          </div>
+
+          {chatMode === 'scripted' ? (
+            currentChoices && currentChoices.length > 0 ? (
+              // 스크립트 모드: 선택지 버튼
+              <div className="space-y-2">
+                {currentChoices.map((choice) => (
+                  <button
+                    key={choice.id}
+                    onClick={() => handleChoice(choice)}
+                    className="w-full text-left px-4 py-3 rounded-xl transition-all duration-200 active:scale-95"
+                    style={{
+                      backgroundColor: theme.bg,
+                      color: theme.otherText,
+                      opacity: 0.9
+                    }}
+                  >
+                    {choice.text}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              // 스크립트 모드인데 선택지 없음
+              <div 
+                className="w-full px-4 py-3 rounded-full text-center opacity-50"
+                style={{
+                  backgroundColor: theme.bg,
+                  color: theme.otherText
+                }}
+              >
+                메시지를 기다리는 중...
+              </div>
+            )
           ) : (
-            <div 
-              className="w-full px-4 py-3 rounded-full text-center opacity-50"
-              style={{
-                backgroundColor: theme.bg,
-                color: theme.otherText
-              }}
-            >
-              메시지를 기다리는 중...
-            </div>
+            // 자유 모드: 입력창
+            <form onSubmit={handleFreeInput} className="flex gap-2">
+              <input
+                type="text"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder="메시지를 입력하세요..."
+                className="flex-1 px-4 py-3 rounded-full outline-none"
+                style={{
+                  backgroundColor: theme.bg,
+                  color: theme.otherText,
+                }}
+                disabled={aiLoading}
+              />
+              <button
+                type="submit"
+                disabled={!inputText.trim() || aiLoading}
+                className="px-6 py-3 rounded-full font-semibold transition-all active:scale-95 disabled:opacity-50"
+                style={{
+                  backgroundColor: theme.myBubble,
+                  color: theme.myText,
+                }}
+              >
+                전송
+              </button>
+            </form>
           )}
         </div>
       </div>

@@ -31,7 +31,9 @@ export function useAIChat({ stats, onStatChange }: UseAIChatProps) {
       });
 
       if (!response.ok) {
-        throw new Error('AI 응답 실패');
+        const errorData = await response.json();
+        console.error('API Error:', errorData);
+        throw new Error(errorData.error || 'AI 응답 실패');
       }
 
       const data = await response.json();
@@ -45,7 +47,19 @@ export function useAIChat({ stats, onStatChange }: UseAIChatProps) {
 
     } catch (error) {
       console.error('AI Chat error:', error);
-      return '(비버가 응답하지 않습니다...)';
+      
+      // 폴백 응답 - AI가 안 되면 기본 응답
+      const fallbackResponses = [
+        '아 그래? ㅋㅋ',
+        '음.. 그렇구나',
+        '나도 비슷해',
+        '진짜?',
+        '오 ㅋㅋㅋ',
+        '그렇긴 하지',
+        '맞아',
+      ];
+      
+      return fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)] + ' (AI 연결 안 됨)';
     } finally {
       setIsLoading(false);
     }
