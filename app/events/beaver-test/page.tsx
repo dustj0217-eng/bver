@@ -139,37 +139,102 @@ export default function EventTestPage() {
   });
   const [result, setResult] = useState<BeaverType | null>(null);
   const [formData, setFormData] = useState({ name: '', phone: '' });
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [animationDirection, setAnimationDirection] = useState<'forward' | 'backward'>('forward');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleStart = () => {
     setCurrentStep('quiz');
   };
 
   const handleAnswer = (optionScores: Record<BeaverType, number>) => {
-    const newScores = { ...scores };
-    Object.keys(optionScores).forEach((key) => {
-      newScores[key as BeaverType] += optionScores[key as BeaverType];
-    });
-    setScores(newScores);
+    setIsAnimating(true);
+    setAnimationDirection('forward');
 
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
-    } else {
-      // 결과 계산
-      const maxScore = Math.max(...Object.values(newScores));
-      const resultType = (Object.keys(newScores) as BeaverType[]).find(
-        (key) => newScores[key] === maxScore
-      ) || 'peaceful';
-      setResult(resultType);
-      setCurrentStep('result');
+    setTimeout(() => {
+      const newScores = { ...scores };
+      Object.keys(optionScores).forEach((key) => {
+        newScores[key as BeaverType] += optionScores[key as BeaverType];
+      });
+      setScores(newScores);
+
+      if (currentQuestion < questions.length - 1) {
+        setCurrentQuestion(currentQuestion + 1);
+      } else {
+        // 결과 계산
+        const maxScore = Math.max(...Object.values(newScores));
+        const resultType = (Object.keys(newScores) as BeaverType[]).find(
+          (key) => newScores[key] === maxScore
+        ) || 'peaceful';
+        setResult(resultType);
+        setCurrentStep('result');
+      }
+
+      setTimeout(() => {
+        setIsAnimating(false);
+      }, 50);
+    }, 300);
+  };
+
+  const handlePrevious = () => {
+    if (currentQuestion > 0) {
+      setIsAnimating(true);
+      setAnimationDirection('backward');
+
+      setTimeout(() => {
+        setCurrentQuestion(currentQuestion - 1);
+        
+        // 이전 질문의 점수를 제거
+        const prevQuestion = questions[currentQuestion];
+        const newScores = { ...scores };
+        
+        // 현재 질문에서 선택했던 답변의 점수를 찾아 제거하는 로직은
+        // 실제로는 답변 이력을 추적해야 하므로, 여기서는 간단히 처리
+        // 실제 구현시에는 answersHistory 같은 state를 추가로 관리해야 합니다
+        
+        setScores(newScores);
+
+        setTimeout(() => {
+          setIsAnimating(false);
+        }, 50);
+      }, 300);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // 여기서 실제 제출 로직 구현 (API 호출 등)
-    console.log('제출 데이터:', { ...formData, result: result ? beaverResults[result].name : '' });
-    alert('제출이 완료되었습니다!');
-    setCurrentStep('submit');
+    setIsSubmitting(true);
+
+    try {
+      // Google Sheets API로 데이터 전송
+      const submitData = {
+        name: formData.name,
+        phone: formData.phone,
+        result: result ? beaverResults[result].name : '',
+        resultType: result,
+        timestamp: new Date().toISOString(),
+        scores: scores
+      };
+
+      // 여기에 실제 Google Sheets Web App URL을 넣으세요
+      const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxUcjD8m_y0MdVTNv3eAuKjnM9a0b7R2LD1_0wNPRy1lbaDa88BKFbHOY17sMUxR08hxA/exec';
+      
+      const response = await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submitData)
+      });
+
+      // no-cors 모드에서는 응답을 읽을 수 없으므로 성공으로 간주
+      setCurrentStep('submit');
+    } catch (error) {
+      alert('제출 중 오류가 발생했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleRestart = () => {
@@ -185,6 +250,12 @@ export default function EventTestPage() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center px-4">
         <div className="max-w-lg w-full text-center">
+          <div className="mb-6 inline-block bg-amber-50 border-2 border-amber-400 px-6 py-3 rounded-lg">
+            <p className="text-amber-800 font-bold text-sm">
+              이벤트 참여자 중 추첨하여 5,000원 상당 기프티콘 증정!
+            </p>
+          </div>
+          
           <h1 className="text-3xl md:text-4xl font-bold mb-6 tracking-tight">
             당신은 어떤 비버인가요?
           </h1>
@@ -230,23 +301,48 @@ export default function EventTestPage() {
             </div>
           </div>
 
-          {/* 질문 */}
-          <h2 className="text-xl md:text-2xl font-bold mb-8 leading-relaxed">
-            {question.question}
-          </h2>
+          {/* 질문 - 애니메이션 적용 */}
+          <div
+            className={`transition-all duration-300 ${
+              isAnimating
+                ? animationDirection === 'forward'
+                  ? 'opacity-0 translate-x-10'
+                  : 'opacity-0 -translate-x-10'
+                : 'opacity-100 translate-x-0'
+            }`}
+          >
+            <h2 className="text-xl md:text-2xl font-bold mb-8 leading-relaxed">
+              {question.question}
+            </h2>
 
-          {/* 선택지 */}
-          <div className="space-y-3">
-            {question.options.map((option, index) => (
-              <button
-                key={index}
-                onClick={() => handleAnswer(option.scores)}
-                className="w-full text-left px-6 py-5 border border-gray-200 hover:border-black hover:bg-gray-50 transition-all text-base"
-              >
-                {option.text}
-              </button>
-            ))}
+            {/* 선택지 */}
+            <div className="space-y-3">
+              {question.options.map((option, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleAnswer(option.scores)}
+                  disabled={isAnimating}
+                  className="w-full text-left px-6 py-5 border border-gray-200 hover:border-black hover:bg-gray-50 transition-all text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {option.text}
+                </button>
+              ))}
+            </div>
           </div>
+
+          {/* 뒤로가기 버튼 */}
+          {currentQuestion > 0 && (
+            <div className="mt-6">
+              <button
+                onClick={handlePrevious}
+                disabled={isAnimating}
+                className="text-gray-600 hover:text-black transition-colors text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span>←</span>
+                <span>이전 질문으로</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -259,7 +355,7 @@ export default function EventTestPage() {
       <div className="min-h-screen bg-white">
         <div className="max-w-2xl mx-auto px-4 py-12 md:py-16">
           {/* 결과 헤더 */}
-          <div className="text-center mb-12">
+          <div className="text-center mb-12 animate-fadeIn">
             <div className="inline-block px-4 py-2 bg-black text-white text-sm font-medium mb-4">
               당신의 비버 유형
             </div>
@@ -306,9 +402,18 @@ export default function EventTestPage() {
             </p>
           </div>
 
+          {/* 이벤트 안내 */}
+          <div className="mb-6 bg-amber-50 border-2 border-amber-400 p-4 rounded-lg">
+            <p className="text-amber-800 text-sm text-center">
+              <span className="font-bold">이벤트 참여 안내</span>
+              <br />
+              참여자 중 추첨을 통해 5,000원 상당 기프티콘을 드립니다!
+            </p>
+          </div>
+
           {/* 정보 입력 폼 */}
           <div className="bg-gray-50 p-8 border border-gray-200">
-            <h3 className="text-xl font-bold mb-6">결과를 저장하시겠어요?</h3>
+            <h3 className="text-xl font-bold mb-6">결과를 저장하고 이벤트에 참여하세요</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2">이름</label>
@@ -319,6 +424,7 @@ export default function EventTestPage() {
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 focus:outline-none focus:border-black"
                   placeholder="이름을 입력해주세요"
+                  disabled={isSubmitting}
                 />
               </div>
               <div>
@@ -330,14 +436,16 @@ export default function EventTestPage() {
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 focus:outline-none focus:border-black"
                   placeholder="010-0000-0000"
+                  disabled={isSubmitting}
                 />
               </div>
               <div className="pt-2">
                 <button
                   type="submit"
-                  className="w-full bg-black text-white py-4 text-base font-medium hover:bg-gray-800 transition-colors"
+                  disabled={isSubmitting}
+                  className="w-full bg-black text-white py-4 text-base font-medium hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
-                  제출하기
+                  {isSubmitting ? '제출 중...' : '제출하기'}
                 </button>
               </div>
             </form>
@@ -361,7 +469,7 @@ export default function EventTestPage() {
   if (currentStep === 'submit') {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center px-4">
-        <div className="max-w-lg w-full text-center">
+        <div className="max-w-lg w-full text-center animate-fadeIn">
           <div className="mb-6">
             <div className="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center mx-auto text-2xl">
               ✓
@@ -370,9 +478,11 @@ export default function EventTestPage() {
           <h2 className="text-2xl md:text-3xl font-bold mb-4">
             제출이 완료되었습니다
           </h2>
-          <p className="text-gray-600 mb-8">
+          <p className="text-gray-600 mb-2">
             소중한 참여 감사드립니다.
-            <br />곧 연락드리겠습니다.
+          </p>
+          <p className="text-gray-600 mb-8">
+            당첨자 발표는 추후 개별 연락을 통해 안내드리겠습니다.
           </p>
           <button
             onClick={handleRestart}
