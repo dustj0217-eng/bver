@@ -342,7 +342,7 @@ export default function MyPage() {
   const hasShippingInfo = shippingInfo.name && shippingInfo.phone && shippingInfo.address;
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] pb-20">
+    <div className="min-h-screen">
       {/* 모달 */}
       <CheckoutModal
         isOpen={showCheckoutModal}
@@ -373,7 +373,7 @@ export default function MyPage() {
         onUpdate={setName}
       />
 
-      <div className="max-w-md mx-auto px-6 pt-6 space-y-3">
+      <div className="max-w-md mx-auto px-6 pt-6 space-y-3 pb-10">
         {/* 배송지 관리 */}
         <Accordion
           title="배송지 관리"
