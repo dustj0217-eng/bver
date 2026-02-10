@@ -267,8 +267,8 @@ export default function CheckoutModal({
               <div>
                 <p className="text-xs text-gray-600 mb-2">입금 계좌</p>
                 <div className="bg-white rounded-lg p-3 border border-blue-100">
-                  <p className="font-semibold">국민은행 123456-78-901234</p>
-                  <p className="text-xs text-gray-500 mt-1">예금주: (주)비버컴퍼니</p>
+                  <p className="font-semibold text-red-500">토스뱅크 1002-4269-1138</p>
+                  <p className="text-xs text-gray-500 mt-1">예금주: 비버하우스</p>
                 </div>
               </div>
               

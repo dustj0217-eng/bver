@@ -187,15 +187,6 @@ export default function OrderDetailModal({
               {canceling ? '취소 처리 중...' : '주문 취소하기'}
             </button>
           )}
-          {order.status !== 'canceled' && onReorder && (
-            <button
-              onClick={handleReorder}
-              disabled={canceling || reordering}
-              className="w-full py-4 bg-blue-500 text-white rounded-lg font-semibold disabled:bg-gray-400"
-            >
-              {reordering ? '처리 중...' : '재구매하기'}
-            </button>
-          )}
           <button
             onClick={onClose}
             disabled={canceling || reordering}

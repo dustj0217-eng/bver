@@ -9,6 +9,7 @@ export interface Choice {
   stat: StatType;
   points?: number;
   nextDialogueId?: string; // 다음 대화 ID (특정 대화로 이동)
+  isFarewell?: boolean;
 }
 
 export interface Dialogue {
@@ -21,6 +22,7 @@ export interface Dialogue {
   };
   time?: 'morning' | 'afternoon' | 'evening' | 'night';
   isEnding?: boolean; // 대화 세션의 마지막인지 여부
+  isFarewell?: boolean;
 }
 
 export interface Message {

@@ -121,39 +121,57 @@ export function Header() {
 
 export function Footer() {
   return (
-    <footer className="bg-black text-white px-4 md:px-6 py-10 md:py-12 text-sm md:text-base">
-      <div className="max-w-3xl mx-auto">
-        <div className="mb-6">
-          <p className="font-bold text-lg md:text-xl mb-4">BEAVER HOUSE</p>
-          <div className="text-gray-400 space-y-1 text-sm md:text-base mb-6">
-            <p>대표: 홍길동</p>
-            <p>사업자등록번호: 123-45-67890</p>
-            <p>통신판매업신고: 2026-서울마포-0001</p>
-            <p>주소: 서울시 마포구 비버로 123</p>
-          </div>
-          
-          <div className="text-gray-400 space-y-1 text-sm md:text-base mb-6">
-            <p>이메일: contact@beaverhouse.co.kr</p>
-            <p>고객센터: 02-1234-5678</p>
-            <p className="text-xs md:text-sm">평일 10:00-18:00 (주말 및 공휴일 휴무)</p>
-          </div>
+    <footer className="bg-black text-white px-4 md:px-6 py-10 text-sm">
+      <div className="max-w-3xl mx-auto space-y-6">
 
-          <div className="flex gap-4 mb-4">
-            <a href="#" className="text-gray-400 hover:text-white transition-colors">
-              <Instagram size={24} />
-            </a>
-            <a href="#" className="text-gray-400 hover:text-white transition-colors">
-              <Youtube size={24} />
-            </a>
-          </div>
-          
-          <div className="flex gap-4 text-xs md:text-sm text-gray-400 mb-6">
-            <button className="hover:text-white transition-colors">이용약관</button>
-            <button className="font-bold text-white">개인정보처리방침</button>
-          </div>
+        {/* 상호 */}
+        <p className="font-bold text-lg">BEAVER HOUSE</p>
+
+        {/* 사업자 정보 */}
+        <div className="text-gray-600 space-y-1 leading-relaxed">
+          <p>상호명: 비버하우스 (BEAVER HOUSE)</p>
+          <p>대표자: 이경빈</p>
+          <p>사업자등록번호: 582-22-02273</p>
         </div>
 
-        <p className="text-xs md:text-sm text-gray-500">© 2026 BEAVER HOUSE. All rights reserved.</p>
+        {/* 고객 문의 */}
+        <div className="text-gray-400 space-y-1">
+          <p>이메일: bverhouse@gmail.com</p>
+          <p className="text-xs">고객 문의는 현재 이메일로만 접수받습니다.</p>
+        </div>
+
+        {/* SNS */}
+        <div className="flex gap-4">
+          <a
+            href="#"
+            className="text-gray-400 hover:text-white transition-colors"
+            aria-label="Instagram"
+          >
+            <Instagram size={22} />
+          </a>
+          <a
+            href="#"
+            className="text-gray-400 hover:text-white transition-colors"
+            aria-label="Youtube"
+          >
+            <Youtube size={22} />
+          </a>
+        </div>
+
+        {/* 약관 */}
+        <div className="flex gap-4 text-xs text-gray-400">
+          <button className="hover:text-white transition-colors">
+            이용약관
+          </button>
+          <button className="font-semibold text-white">
+            개인정보처리방침
+          </button>
+        </div>
+
+        {/* 저작권 */}
+        <p className="text-xs text-gray-500 pt-4">
+          © 2026 BEAVER HOUSE. All rights reserved.
+        </p>
       </div>
     </footer>
   );

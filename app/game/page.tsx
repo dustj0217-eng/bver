@@ -238,47 +238,6 @@ export default function GameHub() {
           )}
         </div>
       </div>
-
-      {/* 하단 고정 탭바 */}
-      <div className="fixed left-0 right-0 bottom-[40px] md:bottom-0 z-30 bg-white border-t border-stone-200">
-        <div className="max-w-2xl mx-auto flex">
-          <button
-            onClick={() => setCurrentTab('main')}
-            className={`flex-1 py-3 text-center font-medium transition-all ${
-              currentTab === 'main' 
-                ? 'bg-stone-800 text-white' 
-                : 'bg-white text-stone-500'
-            }`}
-          >
-            <div className="text-xs">메인</div>
-          </button>
-          <button
-            onClick={() => setCurrentTab('missions')}
-            className={`flex-1 py-3 text-center font-medium transition-all relative ${
-              currentTab === 'missions' 
-                ? 'bg-stone-800 text-white' 
-                : 'bg-white text-stone-500'
-            }`}
-          >
-            {unclaimedRewards > 0 && (
-              <div className="absolute top-1 right-1/4 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                {unclaimedRewards}
-              </div>
-            )}
-            <div className="text-xs">미션</div>
-          </button>
-          <button
-            onClick={() => setCurrentTab('stats')}
-            className={`flex-1 py-3 text-center font-medium transition-all ${
-              currentTab === 'stats' 
-                ? 'bg-stone-800 text-white' 
-                : 'bg-white text-stone-500'
-            }`}
-          >
-            <div className="text-xs">통계</div>
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
